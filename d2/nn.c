@@ -2,8 +2,16 @@
 #include "nn.h"
 #include <time.h>
 
+float td[]={
+    0,0,0,
+    0,1,1,
+    1,0,1,
+    1,1,0
+    };
 
+#if 0
 typedef struct {
+
     Matrice a0;
 
     Matrice w1;
@@ -36,12 +44,10 @@ Xor xor_alloc(void){
 
 
 
-float td[]={
-    0,0,0,
-    0,1,1,
-    1,0,1,
-    1,1,0
-    };
+
+
+
+
 
 void forward_xor(Xor model){
 
@@ -179,13 +185,11 @@ void xor_learn(Xor model , Xor gradient , float rate){
 
 
 }
-
+#endif
 int main(void){
 
-    srand(time(0));
+    srand(time(0)/2);
 
-    Xor model  = xor_alloc();
-    Xor gradient = xor_alloc();
 
     size_t stride = 3;
 
@@ -210,18 +214,14 @@ int main(void){
     
     
     
-    mat_rand(model.w1,0,1);
-    mat_rand(model.b1,0,1);
-    mat_rand(model.w2,0,1);
-    mat_rand(model.b2,0,1);
-    
+
 
 
     size_t epochs = 3*1e5;
     float eps = 1e-2;
     float rate = 1e-2;
 
-
+#if 0
     for (size_t i = 0; i < epochs; i++)
     {
     printf("cost  %zu :  %f\n",i,cost(model,ti,to));
@@ -232,7 +232,6 @@ int main(void){
     }
 
     printf("%f\n",cost(model,ti,to));
-
 
 
     for (size_t i = 0; i < 2; i++)
@@ -248,5 +247,44 @@ int main(void){
         }
     }
 
+
+#endif
+
+    size_t arch[] = {2,2,1};
+    NN nn = nn_alloc(arch,ARRAY_LEN(arch));
+    NN g  = nn_alloc(arch,ARRAY_LEN(arch));
+    nn_rand(nn,0,1);
+    mat_copy(NN_INPUT(nn),mat_row(ti,1));
+
+    // nn_forward(nn);
+
+
+    // MAT_PRINT(NN_OUTPUT(nn));
+    for (size_t i = 0; i < epochs/1; i++)
+    {
+        printf("%f\n",nn_cost(nn,ti,to));
+        nn_finite_diff(nn,g,eps,ti,to);
+        nn_learn(nn,g,rate);
+        
+    }
+
+    printf("\n\n");
+
+    for (size_t i = 0; i < 2; i++)
+    {
+        for (size_t j = 0; j < 2; j++)
+        {
+            MAT_AT(NN_INPUT(nn),0,0) = i;
+            MAT_AT(NN_INPUT(nn),0,1) = j;
+            nn_forward(nn);
+            printf("%zu ^ %zu = %f\n",i,j,MAT_AT(NN_OUTPUT(nn),0,0));
+        }
+    }
+    
+    printf("\n\n");
+
+    NN_PRINT(nn);
+
     return 0;
 }
+
