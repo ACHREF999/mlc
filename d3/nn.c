@@ -186,6 +186,8 @@ void xor_learn(Xor model , Xor gradient , float rate){
 
 }
 #endif
+
+
 int main(void){
 
     srand(time(0)/2);
@@ -218,8 +220,8 @@ int main(void){
 
 
     size_t epochs = 3*1e5;
-    float eps = 1e-2;
-    float rate = 1e-2;
+    float eps = 1e-1;
+    float rate = 1e-1;
 
 #if 0
     for (size_t i = 0; i < epochs; i++)
@@ -263,7 +265,8 @@ int main(void){
     for (size_t i = 0; i < epochs/1; i++)
     {
         printf("%f\n",nn_cost(nn,ti,to));
-        nn_finite_diff(nn,g,eps,ti,to);
+        // nn_finite_diff(nn,g,eps,ti,to);
+        nn_backprop(nn,g,ti,to);
         nn_learn(nn,g,rate);
         
     }

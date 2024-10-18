@@ -250,7 +250,8 @@ void nn_rand(NN nn, float low,float high );
 void nn_forward(NN nn);
 float nn_cost(NN nn ,Matrice ti , Matrice to);
 void nn_finite_diff(NN n,NN g , float eps , Matrice ti , Matrice to);
-
+void nn_learn(NN nn , NN g , float rate);
+void nn_backprop(NN nn,NN g,Matrice ti , Matrice to);
 
 //variadic functions 
 
@@ -394,6 +395,112 @@ void nn_finite_diff(NN nn,NN g , float eps , Matrice ti , Matrice to){
 
 }
 
+void nn_zero(NN g ){
+
+    for (size_t i = 0; i < g.count; i++)
+    {
+        
+    
+
+        mat_fill(g.ws[i],0);
+        mat_fill(g.bs[i],0);
+        mat_fill(g.as[i],0);
+
+    }
+    mat_fill(g.as[g.count],0);
+
+} 
+
+void nn_backprop(NN nn,NN g,Matrice ti , Matrice to){
+    NN_ASSERT(ti.rows == to.rows);
+    NN_ASSERT(to.cols==NN_OUTPUT(nn).cols);
+    size_t n = ti.rows;
+    // we need to clear the gradient after each epoch  we cant just accumm
+
+    nn_zero(g);
+
+    // i - current sample
+    // l - current layer
+    // j - current activation
+    // k - previous activation
+
+    // we are itering each sample
+    for (size_t i = 0; i < n; i++)
+    {
+        mat_copy(NN_INPUT(nn),mat_row(ti,i));
+        nn_forward(nn);
+
+        // we need to clear as from 
+        for (size_t j = 0; j <=  g.count; j++)
+        {
+            mat_fill(g.as[j],0);
+        }
+        // we calc the `first` cost func
+        for (size_t j = 0; j < to.cols; j++)
+        {
+            
+        MAT_AT(NN_OUTPUT(g),0,j) = MAT_AT(NN_OUTPUT(nn),0,j) - MAT_AT(to,i,j) ;
+        }
+
+        // we are itering layers
+        for (size_t l = nn.count; l > 0; l--)
+        {
+            // we are itering neurons in that layer
+            for (size_t j = 0; j < nn.as[l].cols; j++)
+            {
+                // j - weight matrix col
+                // k - weight matrix row
+
+                float a = MAT_AT(nn.as[l],0,j);
+                float da = MAT_AT(g.as[l],0,j);
+                
+                // we update the neurons bias gradient
+                // we can , because the derivative with respect to bias is irrelevant to prev layer activation 
+                MAT_AT(g.bs[l-1],0,j) +=  2*a*(da)*(1-a);
+                
+                // for the weights we need to iter them all (aka iter all neurons from prev layer )
+                for (size_t k = 0; k < nn.as[l-1].cols; k++)
+                {
+                    float prev_actv = MAT_AT(nn.as[l-1],0,k);
+                    MAT_AT(g.ws[l-1],k,j) += 2*da*a*(1-a)*prev_actv;
+                    
+                    // l-1 because l is for indexing layers which is +1 the weights idx
+
+                    // MAT_AT(g.as[l-1],0,k) += 2*da*a*(1-a)*MAT_AT(nn.ws[l],k,j);
+                    MAT_AT(g.as[l-1],0,k) += 2*da*a*(1-a)*MAT_AT(nn.ws[l-1],k,j);
+
+                    // u can think of it as : 
+                    // g.as[(l-1) - 1 due to as] = ....*..[l-1]
+                }
+            }
+        }
+
+    }
+
+
+    for (size_t i = 0; i < g.count; i++)
+    {
+        for (size_t j = 0; j < g.ws[i].rows; j++)
+        {
+            for (size_t k = 0; k < g.ws[i].cols; k++)
+            {
+                MAT_AT(g.ws[i],j,k) /= n;
+            }
+        }
+
+        for (size_t j = 0; j < g.bs[i].rows; j++)
+        {
+            for (size_t k = 0; k < g.bs[i].cols; k++)
+            {
+                MAT_AT(g.ws[i],j,k) /= n;
+            }
+        }
+
+
+    }
+
+
+}
 
 void nn_learn(NN nn ,NN g,float rate){
     for (size_t i = 0; i < nn.count; i++)
