@@ -220,7 +220,7 @@ int main(void){
 
 
     size_t epochs = 3*1e5;
-    float eps = 1e-1;
+    // float eps = 1e-1;
     float rate = 1e-1;
 
 #if 0
